@@ -8,7 +8,6 @@ package uk.ac.tees.v8084582.test;
 import org.junit.*;
 import static org.junit.Assert.*;
 import java.util.*;
-import uk.ac.tees.v8084582.pocketbeasts.*;
 /**
  *
  * @author v8084582
