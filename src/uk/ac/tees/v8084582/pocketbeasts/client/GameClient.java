@@ -10,16 +10,21 @@ import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.Command;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.Player;
 /**
  *
  * @author x
  */
 public class GameClient {
-    private InputStream cIn;
-    private OutputStream cOut;
-    private Socket cSocket;
+    private static InputStream cIn;
+    private static OutputStream cOut;
+    private static Socket cSocket;
     public String serverResponse;
-    ObjectInputStream objectInputStream;
+    static ObjectInputStream objectInputStream;
+    static ObjectOutputStream objectOutputStream;
     
     //logging to console
     private static void log(String msg){
@@ -33,11 +38,10 @@ public class GameClient {
         log("Connection to " + cSocket.getRemoteSocketAddress() + " has successfully initalized.");
         
         //input and output stream initialization
-        
-        InputStream inputStream = cSocket.getInputStream();
-        OutputStream outputStream = cSocket.getOutputStream();
+       
         cIn = cSocket.getInputStream();
         cOut = cSocket.getOutputStream();
+
 
     }
     
@@ -56,6 +60,7 @@ public class GameClient {
         try{
         sResponse = objectInputStream.readObject();
         } catch(IOException eof){
+            log("quitting connection" + eof);
             objectInputStream.close();
         }
         return sResponse;
@@ -64,7 +69,17 @@ public class GameClient {
     public void sendMessage(String cMsg) throws IOException{
         List<Message> msg = new ArrayList<>();
         msg.add(new Message(cMsg));
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(cOut);
+        objectOutputStream = new ObjectOutputStream(cOut);
         objectOutputStream.writeObject(msg);
+    }
+    public static void sendCommand(String cmd, Player sentFrom){
+        try {
+            Command command = new Command(cmd, sentFrom);
+            objectOutputStream = new ObjectOutputStream(cOut);
+            objectOutputStream.writeObject(command);
+        } catch (IOException ex) {
+            Logger.getLogger(GameClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
     }
 }

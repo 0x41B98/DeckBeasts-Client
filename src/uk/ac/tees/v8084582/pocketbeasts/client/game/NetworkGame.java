@@ -6,8 +6,7 @@
 package uk.ac.tees.v8084582.pocketbeasts.client.game;
 
 import java.io.IOException;
-import uk.ac.tees.v8084582.pocketbeasts.client.ClientWindow;
-import uk.ac.tees.v8084582.pocketbeasts.client.GameClient;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.Field;
 import uk.ac.tees.v8084582.pocketbeasts.networkutil.GameUpdate;
 import uk.ac.tees.v8084582.pocketbeasts.networkutil.Player;
 
@@ -18,9 +17,9 @@ import uk.ac.tees.v8084582.pocketbeasts.networkutil.Player;
  */
 public class NetworkGame extends GameInstance {
     
-    public NetworkGame INSTANCE;
+    public static NetworkGame INSTANCE;
     
-    public NetworkGame getInstance() throws IOException {
+    public static NetworkGame getInstance() throws IOException {
         if (INSTANCE == null) {
             INSTANCE = new NetworkGame();
         }
@@ -41,7 +40,10 @@ public class NetworkGame extends GameInstance {
 
     @Override
     public void resetGame() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        players[0] = null;
+        players[1] = null;
+        whosTurn = 0;
+        turnNo = 0;
     }
 
     @Override
@@ -51,8 +53,12 @@ public class NetworkGame extends GameInstance {
     }
 
     @Override
-    public void getField() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Field[] getFields() {
+        Field[] fArry = {
+            players[0].getInPlay(),
+            players[1].getInPlay()
+        };
+        return fArry;
     }
 
     @Override

@@ -4,20 +4,22 @@
  * and open the template in the editor.
  */
 package uk.ac.tees.v8084582.pocketbeasts.client;
-
 import uk.ac.tees.v8084582.pocketbeasts.networkutil.Message;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
-import uk.ac.tees.v8084582.pocketbeasts.client.game.GameSubject;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.Command;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.NetworkGameList;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.Player;
 import uk.ac.tees.v8084582.pocketbeasts.networkutil.ServerCardDirectory;
 
 /**
  *
  * @author x
  */
-public class ClientHandler extends ClientObserver {
+public class ClientHandler extends ClientObserver  {
+
+    static GameClient client = ClientWindow.client;
+    static ServerCardDirectory ccd = ServerCardDirectory.getInstance();
 
     @Override
     public void update(Observable o, Object recvObject) {
@@ -30,59 +32,58 @@ public class ClientHandler extends ClientObserver {
             }
         } else if (recvObject instanceof ServerCardDirectory) {
             parseCardDirectory((ServerCardDirectory) recvObject);
+        } else if (recvObject instanceof Command) {
+            parseCommand((Command) recvObject);
+        } else if (recvObject instanceof Player) {
+            setPlayer((Player) recvObject);
+        } else if (recvObject instanceof NetworkGameList) {
+            setGameRoomList((NetworkGameList) recvObject);
+        }
+    }
+    
+    private static void setGameRoomList(NetworkGameList networkGRL){
+        log("updating game room list");
+        NetworkGameList ngl = NetworkGameList.getInstance();
+        ngl.clearGRL();
+        for (String networkGRList : networkGRL.networkGRList) {
+            log(networkGRList);
+        }
+        
+        ClientWindow.populateGlobalGames();
+        
+    }
+
+    private static void setPlayer(Player player) {
+        log("recv profile");
+        ClientWindow.setPlayer(player);
+    }
+
+    private static void parseCommand(Command c) {
+        String[] cmd = c.getCommand().split(":");
+        switch (cmd[0]) {
+            case ("showdialogbox"): {
+                ClientWindow.showDialogBox(cmd[1], cmd[2], cmd[3]);
+            }
+            break;
+            case ("loginack"):
+                if (cmd[1].equals("success")) {
+                    ClientWindow.setWindow("homePanel");
+                    ClientWindow.postLoginCommands(cmd[2]);
+                } else if (cmd[1].equals("failed")) {
+                    ClientWindow.showDialogBox("Login Failed", "Login incorrect!\nPlease try again.", "error");
+                }
+                break;
         }
     }
 
-    static GameClient client = ClientWindow.client;
-    static ServerCardDirectory ccd = ServerCardDirectory.getInstance();
-    private static int recvObjectID = 0;
-
-    public static void parseMessage(List<Message> messages) {
+    private static void parseMessage(List<Message> messages) {
         log("recv messages");
         messages.forEach((msg) -> log(msg.getText()));
     }
 
-    public static void parseCardDirectory(ServerCardDirectory scd) {
+    private static void parseCardDirectory(ServerCardDirectory scd) {
         ccd.cardList = scd.cardList;
         log("Added cardlist");
-    }
-
-    public static void parseResponse(Object resp) {
-        log("Recieved obj: " + resp);
-        switch (recvObjectID) {
-            case 1:
-            //ccd.cardList = (ServerCardDirectory) resp;
-        }
-        if ("eoo".equals((String) resp)) {
-            recvObjectID = 0;
-        }
-    }
-
-    public static void parseResponse(String resp) throws IOException {
-        int opCode = -1;
-        boolean isValidOpCode = true;
-        String[] parsedResp = resp.split(":");
-        try {
-            opCode = Integer.parseInt(parsedResp[0]);
-        } catch (NumberFormatException nfe) {
-            isValidOpCode = false;
-        }
-        if (isValidOpCode) {
-            switch (opCode) {
-                //confirm connection
-                case 1:
-                    log("Recieved Connection Ack");
-                    break;
-                //
-                case 2:
-                    log("Recieved Login Ack: " + parsedResp[1]);
-                    client.sendMessage("99:Client Ack");
-                    break;
-                //open/close Observer to accept Serialized objects
-                case 4:
-
-            }
-        }
     }
 
 }

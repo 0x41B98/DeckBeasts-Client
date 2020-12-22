@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Foobar.  If not, see <https://www.gnu.org/licenses/>.
  */
-package uk.ac.tees.v8084582.pocketbeasts.client.game.objects;
+package uk.ac.tees.v8084582.pocketbeasts.networkutil;
 
 /**
  *

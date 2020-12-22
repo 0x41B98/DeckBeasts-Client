@@ -6,14 +6,20 @@
 package uk.ac.tees.v8084582.pocketbeasts.client;
 
 import java.awt.CardLayout;
+import java.awt.Container;
 import java.awt.EventQueue;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -25,8 +31,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
-import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Card;
-import uk.ac.tees.v8084582.pocketbeasts.networkutil.Message;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.NetworkGameList;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.Player;
 import uk.ac.tees.v8084582.pocketbeasts.networkutil.ServerCardDirectory;
 
 /**
@@ -37,20 +43,17 @@ public class ClientWindow extends JFrame {
 
     private static ClientWindow INSTANCE;
 
+    private static Container contextFrame = null;
+
     private static ServerCardDirectory ccd = ServerCardDirectory.getInstance();
 
-    private JPanel contentPane;
-    private JTextField usrText;
-    private JPasswordField passText;
-    private JTextField fusrSignup;
-    private JTextField lusrSignup;
-    private JPasswordField passSignup;
-    private JPasswordField newPass;
-    private JPasswordField confirmPass;
-    private JButton[][] buttons;
-    private static JButton resetBtn;
+    private static JPanel contentPane;
+    private static JList gameList;
+    private static DefaultListModel<String> model;
 
     private static CardLayout windows;
+    
+    private static JScrollPane gameSelectPane;
 
     //Client/Server logic
     public static GameClient client;
@@ -58,10 +61,16 @@ public class ClientWindow extends JFrame {
     public static ClientHandler obClientHandler = new ClientHandler();
     private static Object serverResponse = null;
 
-    //game logic
-    private static int moveCount = 0;
-    private static boolean gameWon = false;
-    private static int playersTurn = 1;
+    //profile
+    private static Player usrPlayer;
+
+    public Player getPlayer() {
+        return usrPlayer;
+    }
+
+    public static void setPlayer(Player player) {
+        usrPlayer = player;
+    }
 
     private static void log(String msg) {
         System.out.println(msg);
@@ -85,28 +94,20 @@ public class ClientWindow extends JFrame {
      */
     public static void main(String[] args) {
         initialConnect();
-        EventQueue.invokeLater(() -> {
-            try {
-                ClientWindow frame = new ClientWindow();
-                frame.setVisible(true);
-                clientListener();
-                //serverResponse = client.receiveMessage();
-                //log("Server response:" + serverResponse);
-            } catch (IOException ex) {
-                log("Error loading frame: " + ex.toString());
+        clientListener();
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                    ClientWindow frame = new ClientWindow();
+                    contextFrame = frame.getContentPane();
+                    frame.setVisible(true);
+                    //serverResponse = client.receiveMessage();
+                    //log("Server response:" + serverResponse);
+                } catch (IOException ex) {
+                    log("Error loading frame: " + ex.toString());
+                }
             }
         });
-    }
-
-    private static String sendCommand() throws IOException {
-        String clientSend = JOptionPane.showInputDialog("Enter command to send to server");
-        client.sendMessage(clientSend);
-
-        //initiate GUI when connected to server
-        //ClientWindow frame = new ClientWindow();
-        //frame.setVisible(true);
-        return "Done";
-
     }
 
     private static void clientListener() {
@@ -121,7 +122,7 @@ public class ClientWindow extends JFrame {
                             serverResponse = client.receiveMessage();
                         } catch (IOException | ClassNotFoundException ex) {
                             try {
-                                client.objectInputStream.close();
+                                GameClient.objectInputStream.close();
                             } catch (IOException ex1) {
                                 log("End of file error: " + ex1.toString());
                             }
@@ -138,24 +139,22 @@ public class ClientWindow extends JFrame {
         }.start();
     }
 
-    private ClientWindow() throws IOException {
+    public ClientWindow() throws IOException {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setBounds(100, 100, 1000, 600);
 
         setTitle("Deck Beasts");
-        JPanel userPanel = new JPanel();
+        JPanel homePanel = new JPanel();
         JPanel loginPanel = new JPanel();
         JPanel changePanel = new JPanel();
         JPanel gamePanel = new JPanel();
         JPanel scoresPanel = new JPanel();
-        JPanel signupPanel = new JPanel();
 
-        userPanel.setVisible(false);
-        loginPanel.setVisible(false);
+        homePanel.setVisible(false);
+        loginPanel.setVisible(true);
         changePanel.setVisible(false);
         gamePanel.setVisible(false);
         scoresPanel.setVisible(false);
-        signupPanel.setVisible(false);
 
         contentPane = new JPanel(new CardLayout());
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -163,9 +162,8 @@ public class ClientWindow extends JFrame {
         windows = (CardLayout) contentPane.getLayout();
 
         contentPane.add(loginPanel, "Login");
-        contentPane.add(userPanel, "Userpanel");
+        contentPane.add(homePanel, "homePanel");
         contentPane.add(changePanel, "Change");
-        contentPane.add(signupPanel, "Signup");
         contentPane.add(gamePanel, "gamePanel");
         contentPane.add(scoresPanel, "Scores");
         scoresPanel.setLayout(null);
@@ -173,65 +171,288 @@ public class ClientWindow extends JFrame {
         JLabel lblDeckBeastsTitle = new JLabel("Deck Beasts");
 
         setContentPane(contentPane);
-        userPanel.setLayout(null);
+
+        //home panel
+        homePanel.setLayout(null);
 
         //global game list
         JPanel gameSelectPanel = new JPanel();
         gameSelectPanel.setBounds(5, 5, 400, 400);
-        userPanel.add(gameSelectPanel);
+        homePanel.add(gameSelectPanel);
         gameSelectPanel.setLayout(null);
 
-        JScrollPane gameSelectPane = new JScrollPane();
+        gameSelectPane = new JScrollPane();
         gameSelectPane.setBounds(5, 5, 322, 350);
         gameSelectPanel.add(gameSelectPane);
         JLabel lblGameSelect = new JLabel("Global Games");
         lblGameSelect.setHorizontalAlignment(SwingConstants.CENTER);
         gameSelectPane.setColumnHeaderView(lblGameSelect);
-        JList gameList = new JList();
+        model = new DefaultListModel<>();
+        gameList = new JList(model);
         gameSelectPane.setViewportView(gameList);
 
         JButton btnJoinGame = new JButton("Join Game");
         btnJoinGame.setBounds(7, 366, 100, 30);
         gameSelectPanel.add(btnJoinGame);
 
+        JButton btnCreateGlobalGame = new JButton("Create");
+        btnCreateGlobalGame.setBounds(116, 366, 100, 30);
+        gameSelectPanel.add(btnCreateGlobalGame);
+
         JButton btnRefreshGlobalGames = new JButton("Refresh");
         btnRefreshGlobalGames.setBounds(225, 366, 100, 30);
         gameSelectPanel.add(btnRefreshGlobalGames);
 
-        /*
-        debugging buttons
-         */
-        JButton btnSendCommandServer = new JButton("Send Server Command");
-        btnSendCommandServer.setBounds(200, 200, 100, 30);
-        userPanel.add(btnSendCommandServer);
-
-        JButton btnSendCommandClient = new JButton("Send Client Command");
-        btnSendCommandClient.setBounds(200, 320, 100, 30);
-        userPanel.add(btnSendCommandClient);
-
         //button actions
+        //get game list
         btnRefreshGlobalGames.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //client.sendMessage("");
+                GameClient.sendCommand("getroomlist", usrPlayer);
             }
         });
 
-        windows.show(contentPane, "Userpanel");
-        log("loaded gui");
-        client.sendMessage("COMMAND:sendcards");
+        btnCreateGlobalGame.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String choice = null;
+                int option = JOptionPane.showConfirmDialog(null, "Would you like to allow observers?", "Allow Observers?", JOptionPane.YES_NO_OPTION);
+                if(option == JOptionPane.YES_OPTION){
+                    choice = "true";
+                } else {
+                    choice = "false";
+                }
+                GameClient.sendCommand(("createroom:" + choice), usrPlayer);
+            }
+        });
+
+        //user panel button
+        JButton btnUserProfile = new JButton("Profile");
+        btnUserProfile.setBounds(850, 5, 114, 27);
+        homePanel.add(btnUserProfile);
+
+        //user panel
+        changePanel.setLayout(null);
+
+        JLabel lblChangeName = new JLabel("Change Name");
+        lblChangeName.setBounds(5, 5, 159, 16);
+        changePanel.add(lblChangeName);
+        lblChangeName.setFont(new Font("Comic Sans", Font.PLAIN, 18));
+
+        JTextField changeNameField = new JTextField();
+        changeNameField.setBounds(5, 28, 120, 28);
+        changePanel.add(changeNameField);
+        changeNameField.setColumns(16);
+
+        JButton btnBackProfile = new JButton("Back");
+        btnBackProfile.setBounds(6, 490, 90, 28);
+        changePanel.add(btnBackProfile);
+
+        //button actions
+        //open user profile
+        btnUserProfile.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                windows.show(contentPane, "Change");
+            }
+        });
+
+        //exit user panel
+        btnBackProfile.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                windows.show(contentPane, "homePanel");
+            }
+        });
+
+        //login panel
+        loginPanel.setLayout(null);
+        JLabel lblLogin = new JLabel("Login:");
+        lblLogin.setBounds(403, 140, 40, 40);
+        loginPanel.add(lblLogin);
+
+        JLabel lblLoginUsr = new JLabel("Username:");
+        lblLoginUsr.setBounds(330, 165, 70, 40);
+        loginPanel.add(lblLoginUsr);
+
+        JTextField txtUsernameLogin = new JTextField();
+        txtUsernameLogin.setBounds(403, 174, 130, 26);
+        loginPanel.add(txtUsernameLogin);
+        txtUsernameLogin.setColumns(10);
+
+        JLabel lblLoginPass = new JLabel("Password:");
+        lblLoginPass.setBounds(330, 201, 70, 40);
+        loginPanel.add(lblLoginPass);
+
+        JPasswordField txtPasswordLogin = new JPasswordField();
+        txtPasswordLogin.setBounds(403, 212, 130, 26);
+        loginPanel.add(txtPasswordLogin);
+        txtPasswordLogin.setColumns(10);
+
+        JButton btnLogin = new JButton("Login");
+        btnLogin.setBounds(403, 250, 130, 29);
+        loginPanel.add(btnLogin);
+
+        JLabel lblRegister = new JLabel("Registration:");
+        lblRegister.setBounds(403, 280, 75, 60);
+        loginPanel.add(lblRegister);
+
+        JTextField txtUsernameReg = new JTextField();
+        txtUsernameReg.setBounds(403, 330, 130, 26);
+        loginPanel.add(txtUsernameReg);
+        txtUsernameReg.setColumns(10);
+
+        JLabel lblRegUsr = new JLabel("Username:");
+        lblRegUsr.setBounds(330, 321, 70, 40);
+        loginPanel.add(lblRegUsr);
+
+        JPasswordField txtPasswordReg = new JPasswordField();
+        txtPasswordReg.setBounds(403, 365, 130, 26);
+        loginPanel.add(txtPasswordReg);
+        txtPasswordReg.setColumns(10);
+
+        JLabel lblRegPass = new JLabel("Password:");
+        lblRegPass.setBounds(330, 356, 70, 40);
+        loginPanel.add(lblRegPass);
+
+        JPasswordField txtPasswordConfirmReg = new JPasswordField();
+        txtPasswordConfirmReg.setBounds(403, 400, 130, 26);
+        loginPanel.add(txtPasswordConfirmReg);
+        txtPasswordConfirmReg.setColumns(10);
+
+        JLabel lblRegPassConfirm = new JLabel("Confirm:");
+        lblRegPassConfirm.setBounds(330, 391, 70, 40);
+        loginPanel.add(lblRegPassConfirm);
+
+        JButton btnRegister = new JButton("Register");
+        btnRegister.setBounds(403, 436, 130, 29);
+        loginPanel.add(btnRegister);
+
+        //login panel buttons
+        btnLogin.addActionListener((ActionEvent e) -> {
+            String username = txtUsernameLogin.getText();
+            char[] password = txtPasswordLogin.getPassword();
+
+            // check empty string case
+            if (username.equals("") || password.length == 0) {
+                String errorMsg = "Please enter both username and password";
+                String errorTitle = "Login Error";
+                showDialogBox(errorTitle, errorMsg, "error");
+            } else {
+                try {
+                    String hashedpw = convertPassToSHA256(password);
+                    String loginCommand = "login:" + username + ":" + hashedpw;
+                    //awaitLoginConfirmation(loginCommand);
+                    GameClient.sendCommand(loginCommand, null);
+                    txtUsernameLogin.setText("");
+                    txtPasswordLogin.setText("");
+                } catch (NoSuchAlgorithmException ex) {
+                    log("Error @ login, failed to hash password: " + ex);
+                }
+            }
+        });
+
+        btnRegister.addActionListener(new ActionListener() {
+            String hashedpw;
+
+            public void actionPerformed(ActionEvent e) {
+                String username = txtUsernameReg.getText();
+                char[] password = txtPasswordReg.getPassword();
+                char[] passwordconfirm = txtPasswordConfirmReg.getPassword();
+
+                //basic registration validation
+                if (username.equals("") || password.length == 0 || passwordconfirm.length == 0) {
+                    String errorMsg = "Please enter username, password & password comfirmation!";
+                    String errorTitle = "Registration Error";
+                    showDialogBox(errorTitle, errorMsg, "error");
+                } else if (username.length() <= 3 || username.length() >= 17) {
+                    String errorMsg = "Username error, usernames must be between 4 and 16 characters long!";
+                    String errorTitle = "Registration Error";
+                    showDialogBox(errorTitle, errorMsg, "error");
+                } else if (!Arrays.equals(password, passwordconfirm)) {
+                    String errorMsg = "Passwords do not match!";
+                    String errorTitle = "Registration Error";
+                    showDialogBox(errorTitle, errorMsg, "error");
+                } else if (password.length <= 7 || password.length >= 33) {
+                    String errorMsg = "Passwords must be between 8 and 32 characters long!";
+                    String errorTitle = "Registration Error";
+                    showDialogBox(errorTitle, errorMsg, "error");
+                } else {
+                    try {
+                        hashedpw = convertPassToSHA256(txtPasswordReg.getPassword());
+                    } catch (NoSuchAlgorithmException ex) {
+                        log("Error hashing password: " + ex.toString());
+                    }
+                    String cmd = "reguser:" + txtUsernameReg.getText() + ":" + hashedpw;
+                    GameClient.sendCommand(cmd, null);
+                    txtUsernameReg.setText("");
+                    txtPasswordReg.setText("");
+                    txtPasswordConfirmReg.setText("");
+
+                }
+            }
+        });
+
+        //adds enter-able action to login password btn & confirm registration password
+        txtPasswordLogin.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                btnLogin.doClick();
+            }
+        });
+
+        txtPasswordConfirmReg.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                btnRegister.doClick();
+            }
+        });
+
+    }
+    
+    public static void populateGlobalGames(){
+        NetworkGameList ngl = NetworkGameList.getInstance();
+        model.clear();
+        ngl.networkGRList.forEach((networkGRList) -> {
+            //String row = "Game #" + networkGRList[0] + " | " + networkGRList[1] + " | " + networkGRList[2];
+            model.addElement(networkGRList);
+        });
+        
+    }
+
+    public static void setWindow(String panelID) {
+        windows.show(contentPane, panelID);
 
     }
 
-    public static void setCardDirectory(ArrayList<Card> c) {
-        //ccd.cardList = c;
-
-    }
-
-    public static ClientWindow getInstance() throws IOException {
-        if (INSTANCE == null) {
-            INSTANCE = new ClientWindow();
+    public static void showDialogBox(String title, String message, String type) {
+        switch (type.toLowerCase()) {
+            case ("error"):
+                JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
+                break;
+            case ("info"):
+                JOptionPane.showMessageDialog(null, message, title, JOptionPane.INFORMATION_MESSAGE);
+                break;
         }
-        return INSTANCE;
+
     }
+
+    public static void postLoginCommands(String username) {
+        GameClient.sendCommand("sendcards", null);
+        GameClient.sendCommand(("reqprofile:" + username), null);
+    }
+
+    private String convertPassToSHA256(char[] pw) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        String generatedPassword;
+        String toConvert = new String(pw);
+        byte[] pwbytes = md.digest(toConvert.getBytes());
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < pwbytes.length; i++) {
+            sb.append(Integer.toString((pwbytes[i] & 0xff) + 0x100, 16).substring(1));
+        }
+        generatedPassword = sb.toString();
+        return generatedPassword;
+    }
+
 }

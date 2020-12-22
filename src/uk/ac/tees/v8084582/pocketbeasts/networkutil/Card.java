@@ -84,13 +84,10 @@ public class Card implements Serializable {
                 " Attack/" + this.attack + " Health/" + this.health;
     }
 
-    /*
-    @Override
-    public int compareTo(serverCard o) {
-        return Integer.compare(this.getManaCost(), o.getManaCost());
-    }
-    */
+   
+    
     public String getElement() {
         return this.element;
     }
+
 }

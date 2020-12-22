@@ -17,10 +17,7 @@
 package uk.ac.tees.v8084582.pocketbeasts.networkutil;
 
 import java.io.Serializable;
-import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Deck;
-import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Field;
-import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Graveyard;
-import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Hand;
+
 
 /**
  *
@@ -33,14 +30,17 @@ public class Player implements Serializable {
     
     private final String name;
     
+    private int wins;
+    private int losses;
+    
     private int manaAvailable;
     private int manaTicker;
     private int health;
     
-    private final Deck deck;
-    private final Hand hand;
-    private final Field inPlay;
-    private final Graveyard graveyard;
+    private Deck deck;
+    private Hand hand;
+    private Field inPlay;
+    private  Graveyard graveyard;
 
     public Player(String name, Deck deck) {
         this.name = name;
@@ -51,6 +51,29 @@ public class Player implements Serializable {
         this.hand = new Hand();
         this.inPlay = new Field();
         this.graveyard = new Graveyard();
+    }
+    
+    public Player(String name, Deck deck, int wins, int losses) {
+        this.name = name;
+        this.manaAvailable = 9;
+        this.manaTicker = 0;
+        this.health = 15;
+        this.deck = deck;
+        this.hand = new Hand();
+        this.inPlay = new Field();
+        this.graveyard = new Graveyard();
+        this.wins = wins;
+        this.losses = losses;
+    }
+    
+    public void resetGameObjects(){
+        this.manaAvailable = 9;
+        this.manaTicker = 0;
+        this.health = 15;
+        this.hand = new Hand();
+        this.inPlay = new Field();
+        this.graveyard = new Graveyard();
+        
     }
 
     public String getName() {
@@ -107,7 +130,7 @@ public class Player implements Serializable {
         this.health -= amount;
         return this.health <= 0;
     }
-
+    /*
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -159,4 +182,5 @@ public class Player implements Serializable {
         
         return sb.toString();
     }
+*/
 }

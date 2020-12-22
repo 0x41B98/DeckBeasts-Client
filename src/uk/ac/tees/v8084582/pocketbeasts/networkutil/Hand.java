@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with Foobar.  If not, see <https://www.gnu.org/licenses/>.
  */
-package uk.ac.tees.v8084582.pocketbeasts.client.game.objects;
+package uk.ac.tees.v8084582.pocketbeasts.networkutil;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
-
 /**
  *
  * @author James Fairbairn
  * @author Steven Mead
  */
-public class Hand {
+public class Hand implements Serializable{
     
     private final ArrayList<Card> cards;
 
@@ -54,7 +54,7 @@ public class Hand {
     }
     
     public void sort() {
-        Collections.sort(this.cards);
+        //Collections.sort(this.cards);
     }
 
     @Override

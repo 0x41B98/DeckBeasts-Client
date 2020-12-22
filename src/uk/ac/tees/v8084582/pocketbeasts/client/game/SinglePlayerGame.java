@@ -5,12 +5,12 @@
  */
 package uk.ac.tees.v8084582.pocketbeasts.client.game;
 
-import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Deck;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.Deck;
 
 /**
  *
  * @author x
- */
+
 public class SinglePlayerGame extends GameInstance {
 
     @Override
@@ -37,5 +37,6 @@ public class SinglePlayerGame extends GameInstance {
     public void getField() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
+     
 }
+*/

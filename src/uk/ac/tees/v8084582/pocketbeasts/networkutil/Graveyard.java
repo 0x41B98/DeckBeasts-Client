@@ -14,35 +14,29 @@
  * You should have received a copy of the GNU General Public License
  * along with Foobar.  If not, see <https://www.gnu.org/licenses/>.
  */
-package uk.ac.tees.v8084582.pocketbeasts.client.game.objects;
+package uk.ac.tees.v8084582.pocketbeasts.networkutil;
 
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 
 /**
  *
  * @author James Fairbairn
  * @author Steven Mead
  */
-public class Deck {
+public class Graveyard implements Serializable {
     
     private final ArrayList<Card> cards;
+
+    public Graveyard() {
+        this.cards = new ArrayList<>();
+    }
     
-    public Deck(ArrayList<Card> cards) {
-        this.cards = cards;
+    public void add(Card card) {
+        this.cards.add(card);
     }
     
     public int count() {
         return this.cards.size();
-    }
-    
-    public Card draw() {
-        Card card = this.cards.get(0);
-        this.cards.remove(0);
-        return card;
-    }
-    
-    public void shuffle() {
-        Collections.shuffle(this.cards);
     }
 }

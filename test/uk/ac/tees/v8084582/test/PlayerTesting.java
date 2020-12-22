@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 import java.util.*;
 import uk.ac.tees.v8084582.pocketbeasts.networkutil.Player;
 import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Card;
-import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Deck;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.Deck;
 /**
  *
  * @author v8084582

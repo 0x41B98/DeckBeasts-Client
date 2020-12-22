@@ -5,9 +5,7 @@
  */
 package uk.ac.tees.v8084582.pocketbeasts.client.game;
 
-import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Deck;
-import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Field;
-import uk.ac.tees.v8084582.pocketbeasts.client.game.objects.Hand;
+import uk.ac.tees.v8084582.pocketbeasts.networkutil.Field;
 import uk.ac.tees.v8084582.pocketbeasts.networkutil.GameUpdate;
 import uk.ac.tees.v8084582.pocketbeasts.networkutil.Player;
 
@@ -19,11 +17,13 @@ import uk.ac.tees.v8084582.pocketbeasts.networkutil.Player;
  */
 public abstract class GameInstance {
     public int gameID;
+    public int whosTurn = 0;
+    public int turnNo = 0;
     public Player[] players;
 
-    public void addPlayer(int playerNo, String playerName, Deck deck){
+    public void addPlayer(int playerNo, Player player){
          if(players.length <= 2){
-            players[playerNo] = new Player(playerName, deck);
+            players[playerNo] = player;
         }
     }
     
@@ -31,6 +31,6 @@ public abstract class GameInstance {
     public abstract void resetGame();
     public abstract void recvGameUpdate(GameUpdate gu);
     public abstract GameUpdate createGameUpdate();
-    public abstract void getField();
+    public abstract Field[] getFields();
     
 }
